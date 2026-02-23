@@ -1,0 +1,571 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Portal da Educação Infantil - Gestão de CMEIs</title>
+    <!-- Tailwind CSS via CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Font Awesome para Ícones -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+        
+        body { 
+            font-family: 'Inter', sans-serif; 
+            background-color: #f8fafc; 
+        }
+
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
+
+        .admin-sub-content { display: none; }
+        .admin-sub-content.active { display: block; }
+
+        #main-sidebar {
+            transition: transform 0.3s ease-in-out;
+            transform: translateX(-100%);
+        }
+        #main-sidebar.open { transform: translateX(0); }
+
+        .nav-item.active {
+            background-color: #eff6ff;
+            color: #2563eb;
+            border-left: 4px solid #2563eb;
+        }
+
+        .admin-nav.active {
+            background-color: #1e293b;
+            color: white;
+        }
+
+        .fade-in { animation: fadeIn 0.4s ease-in-out; }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        #sidebar-overlay { display: none; background: rgba(0,0,0,0.3); backdrop-filter: blur(2px); }
+        #sidebar-overlay.active { display: block; }
+    </style>
+</head>
+<body class="text-slate-800 overflow-x-hidden">
+
+    <div id="sidebar-overlay" class="fixed inset-0 z-40 transition-opacity" onclick="toggleSidebar()"></div>
+
+    <!-- Header -->
+    <header class="bg-white border-b shadow-sm sticky top-0 z-30">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex items-center justify-between h-16">
+            <div class="flex items-center gap-4">
+                <button onclick="toggleSidebar()" class="p-2 hover:bg-slate-100 rounded-lg transition-colors text-slate-600">
+                    <i class="fas fa-bars text-xl"></i>
+                </button>
+                <div class="flex items-center gap-2 cursor-pointer" onclick="switchTab('vagas')">
+                    <div class="bg-blue-600 p-2 rounded-lg text-white">
+                        <i class="fas fa-graduation-cap text-xl"></i>
+                    </div>
+                    <div class="hidden sm:block text-left">
+                        <h1 class="text-lg font-bold text-slate-900 leading-none">EducaInfantil</h1>
+                        <p class="text-[10px] text-slate-500 font-medium uppercase">Administração Escolar</p>
+                    </div>
+                </div>
+            </div>
+            <button onclick="switchTab('admin')" class="text-xs font-bold text-red-600 bg-red-50 px-3 py-2 rounded-lg hover:bg-red-100 transition-all flex items-center gap-2">
+                <i class="fas fa-user-shield"></i>
+                <span class="hidden sm:inline">Portal do Gestor</span>
+            </button>
+        </div>
+    </header>
+
+    <!-- Sidebar -->
+    <aside id="main-sidebar" class="fixed left-0 top-0 h-full w-72 bg-white z-50 shadow-2xl flex flex-col">
+        <div class="p-6 border-b flex justify-between items-center bg-slate-50">
+            <div class="flex items-center gap-2">
+                <i class="fas fa-bars text-blue-600"></i>
+                <span class="font-black text-slate-800 tracking-tight">NAVEGAÇÃO</span>
+            </div>
+            <button onclick="toggleSidebar()" class="text-slate-400 hover:text-slate-600 p-2">
+                <i class="fas fa-times text-lg"></i>
+            </button>
+        </div>
+        
+        <nav class="flex-1 py-4 px-3 space-y-1">
+            <button onclick="switchTab('vagas')" data-nav="vagas" class="nav-item active w-full text-left px-4 py-3 rounded-xl text-sm font-semibold flex items-center gap-3 transition-all hover:bg-slate-50">
+                <i class="fas fa-chart-pie w-5 text-center"></i> Quadro de Vagas
+            </button>
+            <button onclick="switchTab('dados-aluno')" data-nav="dados-aluno" class="nav-item w-full text-left px-4 py-3 rounded-xl text-sm font-semibold flex items-center gap-3 transition-all hover:bg-slate-50">
+                <i class="fas fa-address-card w-5 text-center"></i> Área do Aluno
+            </button>
+            <button onclick="switchTab('biblioteca-publica')" data-nav="biblioteca-publica" class="nav-item w-full text-left px-4 py-3 rounded-xl text-sm font-semibold flex items-center gap-3 transition-all hover:bg-slate-50">
+                <i class="fas fa-book-reader w-5 text-center"></i> Biblioteca
+            </button>
+            <button onclick="switchTab('cardapio')" data-nav="cardapio" class="nav-item w-full text-left px-4 py-3 rounded-xl text-sm font-semibold flex items-center gap-3 transition-all hover:bg-slate-50">
+                <i class="fas fa-utensils w-5 text-center"></i> Cardápio
+            </button>
+            <div class="pt-4 mt-4 border-t border-slate-100">
+                <button onclick="switchTab('admin')" data-nav="admin" class="nav-item w-full text-left px-4 py-3 rounded-xl text-sm font-semibold flex items-center gap-3 transition-all hover:bg-slate-50 text-red-600">
+                    <i class="fas fa-user-lock w-5 text-center"></i> Painel do Gestor
+                </button>
+            </div>
+        </nav>
+    </aside>
+
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        
+        <!-- PÁGINA PÚBLICA: VAGAS -->
+        <section id="vagas" class="tab-content active fade-in">
+            <div class="flex items-center gap-3 mb-8">
+                <div class="h-10 w-1 bg-blue-600 rounded-full"></div>
+                <h2 class="text-2xl font-black text-slate-800">Quadro de Vagas</h2>
+            </div>
+            <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6 mb-8">
+                <div class="bg-white p-6 rounded-2xl shadow-sm border">
+                    <p class="text-[10px] font-bold text-slate-400 uppercase">Capacidade</p>
+                    <p id="pub-vagas-total" class="text-3xl font-black text-slate-900 mt-1">0</p>
+                </div>
+                <div class="bg-white p-6 rounded-2xl shadow-sm border">
+                    <p class="text-[10px] font-bold text-slate-400 uppercase">Preenchidas</p>
+                    <p id="pub-vagas-ocupadas" class="text-3xl font-black text-blue-600 mt-1">0</p>
+                </div>
+                <div class="bg-white p-6 rounded-2xl shadow-sm border">
+                    <p class="text-[10px] font-bold text-slate-400 uppercase">Disponíveis</p>
+                    <p id="pub-vagas-livres" class="text-3xl font-black text-green-600 mt-1">0</p>
+                </div>
+                <div class="bg-white p-6 rounded-2xl shadow-sm border">
+                    <p class="text-[10px] font-bold text-slate-400 uppercase">Fila de Espera</p>
+                    <p id="pub-fila-total" class="text-3xl font-black text-orange-500 mt-1">0</p>
+                </div>
+            </div>
+            <div id="pub-fila-list" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4"></div>
+        </section>
+
+        <!-- PÁGINA: DADOS DO ALUNO -->
+        <section id="dados-aluno" class="tab-content fade-in">
+            <div class="bg-indigo-600 p-8 rounded-3xl text-white shadow-xl flex flex-col md:flex-row items-center gap-6 mb-8">
+                <img id="aluno-foto" src="https://api.dicebear.com/7.x/avataaars/svg?seed=Enzo" class="w-24 h-24 rounded-full bg-white/20 border-4 border-white/30" alt="Foto do Aluno">
+                <div class="text-center md:text-left flex-1">
+                    <h2 id="aluno-nome-header" class="text-3xl font-black tracking-tight">...</h2>
+                    <p id="aluno-sub-header" class="text-indigo-100 font-medium">...</p>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                <div class="space-y-6">
+                    <div class="bg-white rounded-3xl shadow-sm border p-6">
+                        <h3 class="font-black text-slate-800 mb-4 text-xs uppercase"><i class="fas fa-id-card text-blue-600 mr-2"></i> Matrícula</h3>
+                        <div id="aluno-matricula-view" class="space-y-3"></div>
+                    </div>
+                    <div class="bg-white rounded-3xl shadow-sm border p-6 border-l-4 border-l-red-500">
+                        <h3 class="font-black text-slate-800 mb-4 text-xs uppercase"><i class="fas fa-heartbeat text-red-500 mr-2"></i> Saúde</h3>
+                        <div id="aluno-saude-view" class="space-y-3"></div>
+                    </div>
+                </div>
+                <div class="lg:col-span-2 space-y-6">
+                    <div class="bg-white rounded-3xl shadow-sm border overflow-hidden">
+                        <table class="w-full text-left text-sm">
+                            <thead class="bg-slate-50 text-[10px] uppercase font-black text-slate-400">
+                                <tr><th class="px-6 py-4">Área de Conhecimento</th><th class="px-6 py-4 text-center">Menção</th><th class="px-6 py-4 text-center">Freq.</th></tr>
+                            </thead>
+                            <tbody id="aluno-notas-view" class="divide-y divide-slate-100"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- BIBLIOTECA -->
+        <section id="biblioteca-publica" class="tab-content fade-in">
+            <div class="flex items-center gap-3 mb-8">
+                <div class="h-10 w-1 bg-amber-500 rounded-full"></div>
+                <h2 class="text-2xl font-black text-slate-800">Biblioteca Escolar</h2>
+            </div>
+            <div id="pub-biblio-stats" class="grid grid-cols-1 sm:grid-cols-3 gap-6 mb-8"></div>
+            <div id="pub-biblio-reservas" class="space-y-4 bg-white p-6 rounded-3xl border shadow-sm"></div>
+        </section>
+
+        <!-- CARDÁPIO -->
+        <section id="cardapio" class="tab-content fade-in">
+            <div class="flex items-center gap-3 mb-8">
+                <div class="h-10 w-1 bg-green-600 rounded-full"></div>
+                <h2 class="text-2xl font-black text-slate-800">Alimentação Escolar</h2>
+            </div>
+            <div id="pub-cardapio-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4"></div>
+        </section>
+
+        <!-- PAINEL ADMINISTRATIVO (GESTOR) -->
+        <section id="admin" class="tab-content fade-in">
+            <div id="admin-login" class="max-w-md mx-auto bg-white p-10 rounded-3xl shadow-2xl border text-center">
+                <div class="bg-red-50 w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-6">
+                    <i class="fas fa-lock text-red-500 text-2xl"></i>
+                </div>
+                <h2 class="text-2xl font-black text-slate-900 mb-2">Acesso Restrito</h2>
+                <p class="text-slate-400 text-sm mb-8">Insira a credencial administrativa para editar as informações do portal.</p>
+                <input type="password" id="admin-pass" placeholder="Senha de Acesso" class="w-full px-6 py-4 rounded-2xl border mb-4 text-center outline-none focus:ring-2 focus:ring-red-500">
+                <button onclick="loginAdmin()" class="w-full bg-slate-900 text-white font-black py-4 rounded-2xl hover:bg-black transition-all">Desbloquear Painel</button>
+                <p class="mt-4 text-[10px] text-slate-400">Dica: A senha é 1234</p>
+            </div>
+
+            <div id="admin-panel" class="hidden">
+                <div class="flex flex-col lg:flex-row gap-8">
+                    <!-- Menu Lateral Admin -->
+                    <div class="w-full lg:w-64 space-y-2">
+                        <p class="text-[10px] font-black text-slate-400 uppercase mb-4 px-4 tracking-widest">Módulos de Edição</p>
+                        <button onclick="switchAdminTab('edit-vagas')" class="admin-nav active w-full text-left px-5 py-3 rounded-xl text-xs font-bold flex items-center gap-3 transition-all"><i class="fas fa-chart-line"></i> Vagas & Fila</button>
+                        <button onclick="switchAdminTab('edit-aluno')" class="admin-nav w-full text-left px-5 py-3 rounded-xl text-xs font-bold flex items-center gap-3 transition-all"><i class="fas fa-user-edit"></i> Dados do Aluno</button>
+                        <button onclick="switchAdminTab('edit-cardapio')" class="admin-nav w-full text-left px-5 py-3 rounded-xl text-xs font-bold flex items-center gap-3 transition-all"><i class="fas fa-utensils"></i> Cardápio</button>
+                        <button onclick="switchAdminTab('edit-biblioteca')" class="admin-nav w-full text-left px-5 py-3 rounded-xl text-xs font-bold flex items-center gap-3 transition-all"><i class="fas fa-book"></i> Biblioteca</button>
+                        <button onclick="logoutAdmin()" class="w-full text-left px-5 py-3 rounded-xl text-xs font-bold flex items-center gap-3 text-red-500 mt-8"><i class="fas fa-sign-out-alt"></i> Sair do Painel</button>
+                    </div>
+
+                    <!-- Conteúdo de Edição -->
+                    <div class="flex-1 bg-white rounded-3xl border shadow-sm p-8 min-h-[600px]">
+                        
+                        <!-- EDITAR VAGAS -->
+                        <div id="edit-vagas" class="admin-sub-content active">
+                            <h3 class="text-xl font-black mb-6">Configurar Vagas</h3>
+                            <div class="grid grid-cols-2 gap-4 mb-8">
+                                <div>
+                                    <label class="text-[10px] font-bold text-slate-400 uppercase">Capacidade Total</label>
+                                    <input type="number" id="inp-vagas-total" class="w-full p-4 bg-slate-50 border rounded-2xl font-bold mt-1">
+                                </div>
+                                <div>
+                                    <label class="text-[10px] font-bold text-slate-400 uppercase">Vagas Ocupadas</label>
+                                    <input type="number" id="inp-vagas-ocupadas" class="w-full p-4 bg-slate-50 border rounded-2xl font-bold mt-1">
+                                </div>
+                            </div>
+                            <h4 class="text-sm font-black mb-4 uppercase">Gerenciar Fila de Espera</h4>
+                            <div id="admin-fila-list" class="space-y-2 mb-4"></div>
+                            <div class="flex gap-2">
+                                <input type="text" id="inp-fila-nome" placeholder="Iniciais/Nome" class="flex-1 p-3 bg-slate-50 border rounded-xl text-sm">
+                                <input type="text" id="inp-fila-idade" placeholder="Idade" class="w-24 p-3 bg-slate-50 border rounded-xl text-sm">
+                                <button onclick="addFilaItem()" class="bg-blue-600 text-white px-6 rounded-xl font-bold text-sm">Adicionar</button>
+                            </div>
+                        </div>
+
+                        <!-- EDITAR ALUNO -->
+                        <div id="edit-aluno" class="admin-sub-content">
+                            <h3 class="text-xl font-black mb-6 text-indigo-600">Editar Prontuário do Aluno</h3>
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+                                <div class="space-y-4">
+                                    <p class="text-xs font-black uppercase text-slate-400">Identificação & Matrícula</p>
+                                    <input type="text" id="inp-aluno-nome" placeholder="Nome Completo" class="w-full p-3 bg-slate-50 border rounded-xl text-sm font-bold">
+                                    <input type="text" id="inp-aluno-cmei" placeholder="CMEI" class="w-full p-3 bg-slate-50 border rounded-xl text-sm">
+                                    <div class="grid grid-cols-2 gap-2">
+                                        <input type="text" id="inp-aluno-etapa" placeholder="Etapa" class="p-3 bg-slate-50 border rounded-xl text-sm">
+                                        <input type="text" id="inp-aluno-turma" placeholder="Turma" class="p-3 bg-slate-50 border rounded-xl text-sm">
+                                    </div>
+                                </div>
+                                <div class="space-y-4">
+                                    <p class="text-xs font-black uppercase text-red-400">Ficha de Saúde</p>
+                                    <input type="text" id="inp-aluno-sangue" placeholder="Tipo Sanguíneo" class="w-full p-3 bg-slate-50 border rounded-xl text-sm font-bold text-red-600">
+                                    <textarea id="inp-aluno-alergia" placeholder="Alergias / Restrições" class="w-full p-3 bg-slate-50 border rounded-xl text-sm h-24"></textarea>
+                                </div>
+                            </div>
+                            <div class="border-t pt-6">
+                                <p class="text-xs font-black uppercase text-slate-400 mb-4">Notas do Aluno</p>
+                                <div id="admin-notas-list" class="space-y-3"></div>
+                            </div>
+                        </div>
+
+                        <!-- EDITAR CARDÁPIO -->
+                        <div id="edit-cardapio" class="admin-sub-content">
+                            <h3 class="text-xl font-black mb-6 text-green-600">Gestão Nutricional</h3>
+                            <div id="admin-cardapio-list" class="space-y-6"></div>
+                        </div>
+
+                        <!-- EDITAR BIBLIOTECA -->
+                        <div id="edit-biblioteca" class="admin-sub-content">
+                            <h3 class="text-xl font-black mb-6 text-amber-600">Acervo e Reservas</h3>
+                            <div class="grid grid-cols-2 gap-4 mb-8">
+                                <div>
+                                    <label class="text-[10px] font-bold text-slate-400 uppercase">Livros no Acervo</label>
+                                    <input type="number" id="inp-bib-total" class="w-full p-4 bg-slate-50 border rounded-2xl font-bold mt-1">
+                                </div>
+                                <div>
+                                    <label class="text-[10px] font-bold text-slate-400 uppercase">Emprestados</label>
+                                    <input type="number" id="inp-bib-emprestados" class="w-full p-4 bg-slate-50 border rounded-2xl font-bold mt-1">
+                                </div>
+                            </div>
+                            <h4 class="text-sm font-black mb-4 uppercase">Reservas Ativas</h4>
+                            <div id="admin-reservas-list" class="space-y-2"></div>
+                        </div>
+
+                        <div class="mt-12 flex justify-end">
+                            <button onclick="saveAllChanges()" class="bg-slate-900 text-white px-10 py-4 rounded-2xl font-black shadow-xl hover:scale-105 transition-all">SALVAR TODAS ALTERAÇÕES</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <script>
+        // ESTADO GLOBAL DO APP (SIMULAÇÃO DE DB)
+        let db = {
+            vagas: { total: 1240, ocupadas: 1182 },
+            fila: [
+                { id: 1, nome: "M. A. S.", idade: "1 ano" },
+                { id: 2, nome: "L. J. K.", idade: "2 anos" },
+                { id: 3, nome: "P. R. B.", idade: "8 meses" }
+            ],
+            biblioteca: { 
+                total: 4580, 
+                emprestados: 124,
+                reservas: [
+                    { id: 101, titulo: "O Pequeno Príncipe", status: "Pronto", nome: "Enzo Gabriel" },
+                    { id: 102, titulo: "Contos de Grimm", status: "Pendente", nome: "Profª Helena" }
+                ] 
+            },
+            cardapio: [
+                { dia: "Segunda", almoco: "Arroz, Feijão, Frango Desfiado e Salada" },
+                { dia: "Terça", almoco: "Macarrão à Bolonhesa e Mix de Legumes" },
+                { dia: "Quarta", almoco: "Arroz, Feijão, Carne Moída e Abóbora" },
+                { dia: "Quinta", almoco: "Omelete com Espinafre e Tomate" },
+                { dia: "Sexta", almoco: "Arroz, Feijão Preto e Carne de Panela" }
+            ],
+            aluno: {
+                nome: "Enzo Gabriel Santos",
+                matricula: {
+                    estabelecimento: "CMEI Cantinho da Criança",
+                    etapa: "Pré-Escola I",
+                    turma: "Turma B - Girassol"
+                },
+                saude: {
+                    sangue: "O+",
+                    alergias: "Lactose, Amendoim. Requer monitoramento rigoroso na hora do lanche.",
+                },
+                notas: [
+                    { area: "Linguagem e Escrita", nota: "Satisfatório", freq: "95%" },
+                    { area: "Raciocínio Lógico", nota: "Pleno", freq: "98%" },
+                    { area: "Interação Social", nota: "Pleno", freq: "92%" }
+                ]
+            }
+        };
+
+        // NAVEGAÇÃO
+        function toggleSidebar() {
+            document.getElementById('main-sidebar').classList.toggle('open');
+            document.getElementById('sidebar-overlay').classList.toggle('active');
+        }
+
+        function switchTab(tabId) {
+            document.querySelectorAll('.tab-content').forEach(s => s.classList.remove('active'));
+            document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active'));
+            document.getElementById(tabId).classList.add('active');
+            const navBtn = document.querySelector(`[data-nav="${tabId}"]`);
+            if(navBtn) navBtn.classList.add('active');
+            if(document.getElementById('main-sidebar').classList.contains('open')) toggleSidebar();
+            renderAll();
+        }
+
+        function switchAdminTab(adminId) {
+            document.querySelectorAll('.admin-sub-content').forEach(s => s.classList.remove('active'));
+            document.querySelectorAll('.admin-nav').forEach(i => i.classList.remove('active'));
+            document.getElementById(adminId).classList.add('active');
+            event.target.closest('button').classList.add('active');
+        }
+
+        // AUTH
+        function loginAdmin() {
+            const pass = document.getElementById('admin-pass').value;
+            if(pass === "1234") {
+                document.getElementById('admin-login').classList.add('hidden');
+                document.getElementById('admin-panel').classList.remove('hidden');
+                syncAdminInputs();
+            } else {
+                alert("Senha incorreta!");
+            }
+        }
+
+        function logoutAdmin() {
+            document.getElementById('admin-login').classList.remove('hidden');
+            document.getElementById('admin-panel').classList.add('hidden');
+            document.getElementById('admin-pass').value = "";
+        }
+
+        // ADMIN: GERENCIAMENTO DE FILA
+        function addFilaItem() {
+            const nome = document.getElementById('inp-fila-nome').value;
+            const idade = document.getElementById('inp-fila-idade').value;
+            if(!nome || !idade) return;
+            db.fila.push({ id: Date.now(), nome, idade });
+            document.getElementById('inp-fila-nome').value = "";
+            document.getElementById('inp-fila-idade').value = "";
+            renderAdminFila();
+        }
+
+        function removeFilaItem(id) {
+            db.fila = db.fila.filter(f => f.id !== id);
+            renderAdminFila();
+        }
+
+        // ADMIN: SINCRONIZAÇÃO DE DADOS
+        function syncAdminInputs() {
+            document.getElementById('inp-vagas-total').value = db.vagas.total;
+            document.getElementById('inp-vagas-ocupadas').value = db.vagas.ocupadas;
+            renderAdminFila();
+
+            document.getElementById('inp-aluno-nome').value = db.aluno.nome;
+            document.getElementById('inp-aluno-cmei').value = db.aluno.matricula.estabelecimento;
+            document.getElementById('inp-aluno-etapa').value = db.aluno.matricula.etapa;
+            document.getElementById('inp-aluno-turma').value = db.aluno.matricula.turma;
+            document.getElementById('inp-aluno-sangue').value = db.aluno.saude.sangue;
+            document.getElementById('inp-aluno-alergia').value = db.aluno.saude.alergias;
+
+            document.getElementById('admin-notas-list').innerHTML = db.aluno.notas.map((n, i) => `
+                <div class="flex gap-2 items-center bg-indigo-50 p-3 rounded-xl">
+                    <span class="text-[10px] font-bold w-32 truncate">${n.area}</span>
+                    <select class="inp-nota-val bg-white text-xs p-1 rounded border flex-1" data-idx="${i}">
+                        <option value="Pleno" ${n.nota === 'Pleno' ? 'selected' : ''}>Pleno</option>
+                        <option value="Satisfatório" ${n.nota === 'Satisfatório' ? 'selected' : ''}>Satisfatório</option>
+                        <option value="Em Desenvolvimento" ${n.nota === 'Em Desenvolvimento' ? 'selected' : ''}>Em Desenv.</option>
+                    </select>
+                    <input type="text" value="${n.freq}" class="inp-nota-freq w-16 bg-white text-xs p-1 rounded border text-center" data-idx="${i}">
+                </div>
+            `).join('');
+
+            document.getElementById('admin-cardapio-list').innerHTML = db.cardapio.map((c, i) => `
+                <div class="bg-slate-50 p-4 rounded-2xl">
+                    <p class="font-black text-xs uppercase mb-2 text-green-700">${c.dia}</p>
+                    <textarea class="inp-cardapio-val w-full p-3 text-xs rounded-xl border h-20" data-idx="${i}">${c.almoco}</textarea>
+                </div>
+            `).join('');
+
+            document.getElementById('inp-bib-total').value = db.biblioteca.total;
+            document.getElementById('inp-bib-emprestados').value = db.biblioteca.emprestados;
+            document.getElementById('admin-reservas-list').innerHTML = db.biblioteca.reservas.map(r => `
+                <div class="flex justify-between items-center p-3 bg-slate-50 rounded-xl">
+                    <p class="text-[10px] font-bold">${r.titulo} <br><span class="text-slate-400 font-normal">P/ ${r.nome}</span></p>
+                    <button onclick="removeReserva(${r.id})" class="text-red-500 text-xs font-bold">Cancelar</button>
+                </div>
+            `).join('');
+        }
+
+        function renderAdminFila() {
+            document.getElementById('admin-fila-list').innerHTML = db.fila.map(f => `
+                <div class="flex justify-between items-center p-3 bg-slate-50 rounded-xl border-l-4 border-blue-500">
+                    <span class="text-xs font-bold">${f.nome} (${f.idade})</span>
+                    <button onclick="removeFilaItem(${f.id})" class="text-red-500 p-2"><i class="fas fa-trash"></i></button>
+                </div>
+            `).join('');
+        }
+
+        function removeReserva(id) {
+            db.biblioteca.reservas = db.biblioteca.reservas.filter(r => r.id !== id);
+            syncAdminInputs();
+        }
+
+        function saveAllChanges() {
+            db.vagas.total = parseInt(document.getElementById('inp-vagas-total').value) || 0;
+            db.vagas.ocupadas = parseInt(document.getElementById('inp-vagas-ocupadas').value) || 0;
+
+            db.aluno.nome = document.getElementById('inp-aluno-nome').value;
+            db.aluno.matricula.estabelecimento = document.getElementById('inp-aluno-cmei').value;
+            db.aluno.matricula.etapa = document.getElementById('inp-aluno-etapa').value;
+            db.aluno.matricula.turma = document.getElementById('inp-aluno-turma').value;
+            db.aluno.saude.sangue = document.getElementById('inp-aluno-sangue').value;
+            db.aluno.saude.alergias = document.getElementById('inp-aluno-alergia').value;
+
+            document.querySelectorAll('.inp-nota-val').forEach(sel => {
+                db.aluno.notas[sel.dataset.idx].nota = sel.value;
+            });
+            document.querySelectorAll('.inp-nota-freq').forEach(inp => {
+                db.aluno.notas[inp.dataset.idx].freq = inp.value;
+            });
+
+            document.querySelectorAll('.inp-cardapio-val').forEach(area => {
+                db.cardapio[area.dataset.idx].almoco = area.value;
+            });
+
+            db.biblioteca.total = parseInt(document.getElementById('inp-bib-total').value) || 0;
+            db.biblioteca.emprestados = parseInt(document.getElementById('inp-bib-emprestados').value) || 0;
+
+            renderAll();
+            alert("Todas as alterações foram aplicadas com sucesso!");
+        }
+
+        function renderAll() {
+            const livres = db.vagas.total - db.vagas.ocupadas;
+            document.getElementById('pub-vagas-total').innerText = db.vagas.total.toLocaleString();
+            document.getElementById('pub-vagas-ocupadas').innerText = db.vagas.ocupadas.toLocaleString();
+            document.getElementById('pub-vagas-livres').innerText = livres.toLocaleString();
+            document.getElementById('pub-fila-total').innerText = db.fila.length;
+            document.getElementById('pub-fila-list').innerHTML = db.fila.map((f, i) => `
+                <div class="bg-white p-4 rounded-2xl border flex items-center gap-3">
+                    <span class="w-8 h-8 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center font-black text-xs">${i+1}º</span>
+                    <div><p class="font-black text-xs text-slate-800">${f.nome}</p><p class="text-[10px] text-slate-400 font-bold uppercase">${f.idade}</p></div>
+                </div>
+            `).join('');
+
+            document.getElementById('aluno-nome-header').innerText = db.aluno.nome;
+            document.getElementById('aluno-sub-header').innerText = `${db.aluno.matricula.etapa} • ${db.aluno.matricula.turma}`;
+            
+            document.getElementById('aluno-matricula-view').innerHTML = `
+                <div class="space-y-2">
+                    <p class="text-[10px] text-slate-400 font-black uppercase">Unidade</p>
+                    <p class="text-xs font-bold text-slate-800">${db.aluno.matricula.estabelecimento}</p>
+                    <div class="grid grid-cols-2 gap-2 mt-4">
+                        <div><p class="text-[9px] font-black text-slate-400 uppercase">Turno</p><p class="text-xs font-bold">Integral</p></div>
+                        <div><p class="text-[9px] font-black text-slate-400 uppercase">Matrícula</p><p class="text-xs font-bold">2024.12-A</p></div>
+                    </div>
+                </div>
+            `;
+
+            document.getElementById('aluno-saude-view').innerHTML = `
+                <div class="space-y-2">
+                    <div class="flex justify-between border-b pb-2"><p class="text-[10px] text-slate-400 font-black uppercase">Sangue</p><p class="text-xs font-black text-red-600">${db.aluno.saude.sangue}</p></div>
+                    <p class="text-[10px] text-slate-400 font-black uppercase mt-2">Restrições</p>
+                    <p class="text-xs font-bold text-slate-700 leading-relaxed">${db.aluno.saude.alergias}</p>
+                </div>
+            `;
+
+            document.getElementById('aluno-notas-view').innerHTML = db.aluno.notas.map(n => `
+                <tr>
+                    <td class="px-6 py-4 font-black text-xs text-slate-700">${n.area}</td>
+                    <td class="px-6 py-4 text-center"><span class="bg-indigo-600 text-white px-3 py-1 rounded-xl font-black text-[9px] uppercase">${n.nota}</span></td>
+                    <td class="px-6 py-4 text-center text-xs font-bold text-slate-400">${n.freq}</td>
+                </tr>
+            `).join('');
+
+            document.getElementById('pub-biblio-stats').innerHTML = `
+                <div class="bg-slate-900 text-white p-6 rounded-3xl border">
+                    <p class="text-[10px] text-slate-400 font-bold uppercase">Acervo</p>
+                    <p class="text-3xl font-black">${db.biblioteca.total}</p>
+                </div>
+                <div class="bg-white p-6 rounded-3xl border border-l-4 border-l-blue-500">
+                    <p class="text-[10px] text-slate-400 font-bold uppercase">Em Circulação</p>
+                    <p class="text-3xl font-black text-blue-600">${db.biblioteca.emprestados}</p>
+                </div>
+                <div class="bg-white p-6 rounded-3xl border border-l-4 border-l-amber-500">
+                    <p class="text-[10px] text-slate-400 font-bold uppercase">Reservas</p>
+                    <p class="text-3xl font-black text-amber-500">${db.biblioteca.reservas.length}</p>
+                </div>
+            `;
+
+            document.getElementById('pub-biblio-reservas').innerHTML = `
+                <h3 class="text-xs font-black uppercase mb-4 tracking-widest text-slate-400">Situação de Reservas</h3>
+                <div class="space-y-3">
+                    ${db.biblioteca.reservas.map(r => `
+                        <div class="flex justify-between items-center p-4 bg-slate-50 rounded-2xl border">
+                            <div><p class="text-sm font-bold">${r.titulo}</p><p class="text-[10px] text-slate-500 uppercase font-bold">${r.nome}</p></div>
+                            <span class="text-[9px] font-black px-2 py-1 rounded-lg ${r.status === 'Pronto' ? 'bg-green-100 text-green-600' : 'bg-amber-100 text-amber-600'}">${r.status.toUpperCase()}</span>
+                        </div>
+                    `).join('')}
+                </div>
+            `;
+
+            document.getElementById('pub-cardapio-grid').innerHTML = db.cardapio.map(c => `
+                <div class="bg-white p-5 rounded-3xl border shadow-sm group hover:border-green-300 transition-all">
+                    <p class="font-black text-green-600 text-[10px] mb-3 border-b pb-2 uppercase tracking-tighter">${c.dia}</p>
+                    <p class="text-[9px] font-black text-slate-300 uppercase mb-1">Prato Principal</p>
+                    <p class="text-xs font-bold text-slate-700 leading-snug">${c.almoco}</p>
+                </div>
+            `).join('');
+        }
+
+        // Inicializar aplicação
+        window.addEventListener('DOMContentLoaded', renderAll);
+    </script>
+</body>
+</html>
